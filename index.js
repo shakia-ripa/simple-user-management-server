@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -28,16 +28,48 @@ async function run() {
 
         const usersCollection = client.db('usersCollectionDB').collection('users');
 
-        app.get('/users', async (req, res) =>{
+        app.get('/users', async (req, res) => {
             const cursor = usersCollection.find();
             const result = await cursor.toArray();
             res.send(result);
         })
 
-        app.post('/users', async (req, res) =>{
+        app.get('/users/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await usersCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.post('/users', async (req, res) => {
             const newUser = req.body;
             console.log(newUser);
             const result = await usersCollection.insertOne(newUser);
+            res.send(result);
+        })
+
+        app.put('/users/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const user = req.body;
+            console.log(user);
+            const updatedUser = {
+                $set: {
+                    name: user.name,
+                    email: user.email,
+                    gender: user.newGender,
+                    status: user.newStatus
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updatedUser, options);
+            res.send(result)
+        })
+
+        app.delete('/users/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)};
+            const result = await usersCollection.deleteOne(query);
             res.send(result);
         })
 
